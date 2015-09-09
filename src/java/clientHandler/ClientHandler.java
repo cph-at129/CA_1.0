@@ -18,8 +18,7 @@ import server.Server;
  *
  * @author Aleksandar, Lukasz, Viktor
  */
-public class ClientHandler implements Runnable
-{
+public class ClientHandler implements Runnable {
 
     public static final String USER = "USER#";
     public static final String MSG = "MSG#";
@@ -28,17 +27,15 @@ public class ClientHandler implements Runnable
 
     private final Server server;
     private final Socket clientSocket;
-    
-    public ClientHandler(Socket clientSocket, Server server)
-    {
+
+    public ClientHandler(Socket clientSocket, Server server) {
 
         this.server = server;
         this.clientSocket = clientSocket;
     }
 
     @Override
-    public void run()
-    {
+    public void run() {
         try {
             server.sendUserList(clientSocket);
 
@@ -55,6 +52,21 @@ public class ClientHandler implements Runnable
                 }
             }
             out.println("You are online");
+
+            while ((inputLine = in.readLine()) != null) {
+
+                if (inputLine != null) {
+                    if (inputLine.equals(STOP)) {//if user wants to disconnect
+                        server.removeClientFromUserList(this);
+                        server.sendUpdatedUserList();
+                        break;
+                    } else if (inputLine.startsWith(MSG)
+                            && inputLine.substring(4).contains("#")
+                            && (inputLine.length() > 4)) {
+                        server.processMessage(clientSocket, inputLine);
+                    }
+                }
+            }
 
             clientSocket.close();
 
