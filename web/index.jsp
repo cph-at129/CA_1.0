@@ -1,8 +1,3 @@
-<%-- 
-    Document   : index
-    Created on : Sep 9, 2015, 8:33:59 PM
-    Author     : sasho
---%>
 
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <!DOCTYPE html>
