@@ -1,8 +1,4 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
+
 package clientHandler;
 
 import java.io.BufferedReader;
@@ -18,8 +14,8 @@ import server.Server;
  *
  * @author Aleksandar, Lukasz, Viktor
  */
-public class ClientHandler implements Runnable {
-
+public class ClientHandler implements Runnable
+{
     public static final String USER = "USER#";
     public static final String MSG = "MSG#";
     public static final String STOP = "STOP#";
@@ -28,14 +24,15 @@ public class ClientHandler implements Runnable {
     private final Server server;
     private final Socket clientSocket;
 
-    public ClientHandler(Socket clientSocket, Server server) {
-
+    public ClientHandler(Socket clientSocket, Server server)
+    {
         this.server = server;
         this.clientSocket = clientSocket;
     }
 
     @Override
-    public void run() {
+    public void run()
+    {
         try {
             server.sendUserList(clientSocket);
 
@@ -67,8 +64,19 @@ public class ClientHandler implements Runnable {
                     }
                 }
             }
-
             clientSocket.close();
+
+        } catch (IOException ex) {
+            Logger.getLogger(ClientHandler.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    public void print(String output)
+    {
+        try {
+            PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+            BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            out.println(output);
 
         } catch (IOException ex) {
             Logger.getLogger(ClientHandler.class.getName()).log(Level.SEVERE, null, ex);
