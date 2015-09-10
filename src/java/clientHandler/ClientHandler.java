@@ -1,8 +1,4 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
+
 package clientHandler;
 
 import java.io.BufferedReader;
@@ -20,7 +16,6 @@ import server.Server;
  */
 public class ClientHandler implements Runnable
 {
-
     public static final String USER = "USER#";
     public static final String MSG = "MSG#";
     public static final String STOP = "STOP#";
@@ -28,10 +23,9 @@ public class ClientHandler implements Runnable
 
     private final Server server;
     private final Socket clientSocket;
-    
+
     public ClientHandler(Socket clientSocket, Server server)
     {
-
         this.server = server;
         this.clientSocket = clientSocket;
     }
@@ -56,7 +50,33 @@ public class ClientHandler implements Runnable
             }
             out.println("You are online");
 
+            while ((inputLine = in.readLine()) != null) {
+
+                if (inputLine != null) {
+                    if (inputLine.equals(STOP)) {//if user wants to disconnect
+                        server.removeClientFromUserList(this);
+                        server.sendUpdatedUserList();
+                        break;
+                    } else if (inputLine.startsWith(MSG)
+                            && inputLine.substring(4).contains("#")
+                            && (inputLine.length() > 4)) {
+                        server.processMessage(clientSocket, inputLine);
+                    }
+                }
+            }
             clientSocket.close();
+
+        } catch (IOException ex) {
+            Logger.getLogger(ClientHandler.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    public void print(String output)
+    {
+        try {
+            PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+            BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            out.println(output);
 
         } catch (IOException ex) {
             Logger.getLogger(ClientHandler.class.getName()).log(Level.SEVERE, null, ex);
