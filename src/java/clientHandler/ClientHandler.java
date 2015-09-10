@@ -16,7 +16,7 @@ import server.Server;
  */
 public class ClientHandler implements Runnable
 {
-    public static final String USER = "USER#";
+   public static final String USER = "USER#";
     public static final String MSG = "MSG#";
     public static final String STOP = "STOP#";
     public static final String USERLIST = "USERLIST#";
@@ -26,6 +26,7 @@ public class ClientHandler implements Runnable
 
     public ClientHandler(Socket clientSocket, Server server)
     {
+
         this.server = server;
         this.clientSocket = clientSocket;
     }
@@ -33,6 +34,7 @@ public class ClientHandler implements Runnable
     @Override
     public void run()
     {
+
         try {
             server.sendUserList(clientSocket);
 
@@ -48,19 +50,17 @@ public class ClientHandler implements Runnable
                     break;
                 }
             }
-            out.println("You are online");
+            //  out.println("You are online");
 
             while ((inputLine = in.readLine()) != null) {
 
                 if (inputLine != null) {
-                    if (inputLine.equals(STOP)) {//if user wants to disconnect
+                    if (inputLine.equals(STOP)) {
                         server.removeClientFromUserList(this);
                         server.sendUpdatedUserList();
                         break;
-                    } else if (inputLine.startsWith(MSG)
-                            && inputLine.substring(4).contains("#")
-                            && (inputLine.length() > 4)) {
-                        server.processMessage(clientSocket, inputLine);
+                    } else if (inputLine.startsWith(MSG) && inputLine.substring(4).contains("#") && inputLine.length() > 4) {
+                        server.proccessMessage(inputLine, clientSocket, this);
                     }
                 }
             }
@@ -69,7 +69,9 @@ public class ClientHandler implements Runnable
         } catch (IOException ex) {
             Logger.getLogger(ClientHandler.class.getName()).log(Level.SEVERE, null, ex);
         }
+
     }
+
 
     public void print(String output)
     {
@@ -81,5 +83,6 @@ public class ClientHandler implements Runnable
         } catch (IOException ex) {
             Logger.getLogger(ClientHandler.class.getName()).log(Level.SEVERE, null, ex);
         }
+
     }
 }
