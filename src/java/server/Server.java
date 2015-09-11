@@ -10,8 +10,10 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashMap;
+import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import utils.Utils;
 
 /**
  *
@@ -19,33 +21,57 @@ import java.util.logging.Logger;
  */
 public class Server
 {
-    private static final int portNumber = 8112;//server's port number
-    private static final String localhost = "localhost";
+    private ServerSocket serverSocket;
+    
+//    private static final int portNumber = 8112;//server's port number
+//    private static final String localhost = "localhost";
     private static HashMap<String, ClientHandler> userList = new HashMap();//save the clients
+    
+    private static final Properties properties = Utils.initProperties("server.properties");
 
     public static final String USER = "USER#";
     public static final String MSG = "MSG#";
     public static final String STOP = "STOP#";
     public static final String USERLIST = "USERLIST#";
+    
+    public boolean shutdown;
 
     public void connect()
     {
+        int port = Integer.parseInt(properties.getProperty("port"));
+        String ip = properties.getProperty("serverIp");
+        
+        String logFile = properties.getProperty("logFile");
+        Utils.setLogFile(logFile, Server.class.getName());
+        
+        Logger.getLogger(Server.class.getName()).log(Level.INFO, "Sever started. Listening on: " + port + ", bound to: " + ip);
+        
         try {
-            ServerSocket serverSocket = new ServerSocket();
-            serverSocket.bind(new InetSocketAddress(localhost, portNumber));
+            serverSocket = new ServerSocket();
+            serverSocket.bind(new InetSocketAddress(ip, port));
 
-            while (true) {
+            do{
                 new Thread(new ClientHandler(serverSocket.accept(), this)).start();
-            }
+                Logger.getLogger(Server.class.getName()).log(Level.INFO, "Connected to a client");
+            }while(!shutdown);
+            
+
         } catch (IOException ex) {
             Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-//        
+        }finally{
+            
+            Utils.closeLogger(Server.class.getName());
         }
+        
+      
+    }
+    public void disconnect(){
+    
+        shutdown = true;  
     }
 
     public void sendUserList(Socket clientSocket)
     {
-
         try {
             PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
             BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
@@ -61,6 +87,7 @@ public class Server
             }
             String outputLine = USERLIST + tmp;
             out.println(outputLine);
+            Logger.getLogger(Server.class.getName()).log(Level.INFO, String.format("Received the message: %1$S ", outputLine));
 
         } catch (IOException ex) {
             Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);

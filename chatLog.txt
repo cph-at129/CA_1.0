@@ -1,0 +1,6 @@
+Sep 11, 2015 1:54:03 PM server.Server connect
+INFO: Sever started. Listening on: 9090, bound to: localhost
+Sep 11, 2015 1:54:42 PM server.Server connect
+INFO: Connected to a client
+Sep 11, 2015 1:54:42 PM server.Server sendUserList
+INFO: Received the message: USERLIST# 

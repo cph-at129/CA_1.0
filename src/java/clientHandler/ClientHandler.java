@@ -1,4 +1,3 @@
-
 package clientHandler;
 
 import java.io.BufferedReader;
@@ -14,36 +13,42 @@ import server.Server;
  *
  * @author Aleksandar, Lukasz, Viktor
  */
-public class ClientHandler implements Runnable
-{
-   public static final String USER = "USER#";
+public class ClientHandler implements Runnable {
+
+    public static final String USER = "USER#";
     public static final String MSG = "MSG#";
     public static final String STOP = "STOP#";
     public static final String USERLIST = "USERLIST#";
 
     private final Server server;
     private final Socket clientSocket;
+    private PrintWriter out;
+    private BufferedReader in;
 
-    public ClientHandler(Socket clientSocket, Server server)
-    {
+    public Socket getClientSocket() {
+
+        return clientSocket;
+    }
+
+    public ClientHandler(Socket clientSocket, Server server) {
 
         this.server = server;
         this.clientSocket = clientSocket;
     }
 
     @Override
-    public void run()
-    {
+    public void run() {
 
         try {
             server.sendUserList(clientSocket);
 
-            PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-            BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            out = new PrintWriter(clientSocket.getOutputStream(), true);
+            in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
             String inputLine;
             String outputLine;
             while ((inputLine = in.readLine()) != null) { //loop to get the user name and send it to everyone
+                
                 boolean status = server.getUserNameAndUpdateUserList(inputLine, this);
                 if (status) {
                     server.sendUpdatedUserList();
@@ -54,6 +59,7 @@ public class ClientHandler implements Runnable
 
             while ((inputLine = in.readLine()) != null) {
 
+                Logger.getLogger(ClientHandler.class.getName()).log(Level.INFO, String.format("Received the message: %1$S ", inputLine));
                 if (inputLine != null) {
                     if (inputLine.equals(STOP)) {
                         server.removeClientFromUserList(this);
@@ -65,6 +71,7 @@ public class ClientHandler implements Runnable
                 }
             }
             clientSocket.close();
+            Logger.getLogger(ClientHandler.class.getName()).log(Level.INFO, "Closed a Connection");
 
         } catch (IOException ex) {
             Logger.getLogger(ClientHandler.class.getName()).log(Level.SEVERE, null, ex);
@@ -72,12 +79,10 @@ public class ClientHandler implements Runnable
 
     }
 
-
-    public void print(String output)
-    {
+    public void print(String output) {
         try {
-            PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-            BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            out = new PrintWriter(clientSocket.getOutputStream(), true);
+            in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
             out.println(output);
 
         } catch (IOException ex) {

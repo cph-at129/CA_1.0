@@ -5,36 +5,111 @@
  */
 package non_GUI_Client;
 
+import clientHandler.ClientHandler;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.net.InetAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
+import java.util.Observable;
+import java.util.Properties;
+import java.util.Scanner;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.swing.JOptionPane;
-import server.Server;
+import utils.Utils;
 
 /**
  *
  * @author sasho
  */
-public class Non_GUI_Client {
+public class Non_GUI_Client extends Observable {
 
-    private static String IP = "unknown";
+    private Socket socket;
+    private InetAddress serverAddress;
+    private ServerMessageReader reader;
+    private String serverMessage = "";
+    private String IP;
+    private int PORT;
 
-    private String getServerAddress() {
-
-        String ip = JOptionPane.showInputDialog("Enter IP Address of the Server:", "Welcome to the Chatter");
-        return ip;
-    }
-
-    private void run() {
-
-        Socket socket;
+    private void getIPAndPort() {
 
         try {
-            socket = new Socket(IP, 8112);
+            BufferedReader stdIn
+                    = new BufferedReader(new InputStreamReader(System.in));
+ 
+            while (true) {
+               System.out.println("Enter IP: ");
+               String input = stdIn.readLine();
+               if(input != null || input.trim().length() != 0){
+                   this.IP = input;
+                   break;
+               }
+            }
+            while (true) {
+               System.out.println("Enter PORT: ");
+               String input = stdIn.readLine();
+               if(input != null || input.trim().length() != 0){
+                   this.PORT = Integer.parseInt(input);
+                   break;
+               }
+            }
+
+        } catch (IOException ex) {
+            Logger.getLogger(Non_GUI_Client.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    public void setIPAndPort(String IP, int PORT){
+        
+        this.IP = IP;
+        this.PORT = PORT;
+    }
+
+    public void connect() {
+
+        try {
+            serverAddress = InetAddress.getByName(IP);
+        } catch (UnknownHostException ex) {
+            Logger.getLogger(Non_GUI_Client.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        try {
+            socket = new Socket(IP, PORT);
+        } catch (IOException ex) {
+            Logger.getLogger(Non_GUI_Client.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    public void sendMessage(String message) {
+
+        try {
+
+            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+            //send message to the server
+            out.println(message);
+
+        } catch (IOException ex) {
+            Logger.getLogger(Non_GUI_Client.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    public void readFromServer() {
+
+        reader = new ServerMessageReader(socket);
+        reader.start();
+
+    }
+
+    public String getServerMessage() {
+
+        return serverMessage;
+    }
+
+    public void run() {
+
+        try {
             BufferedReader in = new BufferedReader(new InputStreamReader(
                     socket.getInputStream()));
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
@@ -42,17 +117,15 @@ public class Non_GUI_Client {
                     = new BufferedReader(new InputStreamReader(System.in));
 
             String fromUser;
-            ServerMessageReader reader = new ServerMessageReader(socket);
 
-            Thread t = new Thread(reader);
+            ExecutorService executor = Executors.newFixedThreadPool(1);
+            executor.execute(new ServerMessageReader((socket)));
 
-            t.start();
-            
             while ((fromUser = stdIn.readLine()) != null) {//read from the Server, until you reach the end of the stream
 
                 out.println(fromUser);//send the message to the server
-                
-                if(!t.isAlive()){
+                if (fromUser.equals("STOP#")) {
+                    executor.shutdown();
                     break;
                 }
             }
@@ -65,11 +138,12 @@ public class Non_GUI_Client {
     public static void main(String[] args) {
 
         Non_GUI_Client client = new Non_GUI_Client();
-        IP = client.getServerAddress();
-        System.out.println("IP: " + IP);
+        client.getIPAndPort();
+        client.connect();
         client.run();
     }
 
+    //this class reads the input from the Server
     private class ServerMessageReader extends Thread {
 
         private Socket clientSocket;
@@ -89,11 +163,12 @@ public class Non_GUI_Client {
                 String fromServer;
 
                 while ((fromServer = in.readLine()) != null) {//read from the Server, until you reach the end of the stream
-
+                    
+                    serverMessage = fromServer;//save the message
                     System.out.println(fromServer);//print the message from the server
-
+                    setChanged();
+                    notifyObservers(fromServer);
                 }
-                
 
             } catch (IOException ex) {
                 Logger.getLogger(Non_GUI_Client.class.getName()).log(Level.SEVERE, null, ex);
